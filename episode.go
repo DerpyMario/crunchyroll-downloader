@@ -16,7 +16,7 @@ type Episode struct {
 	// Token to give to the Widevine CDM challenge
 	Token string `json:"token"`
 	// Error, `nil` if there's no error
-	Error *string `json:"error"`
+	Error interface{} `json:"error"`
 }
 
 type Subtitle struct {
@@ -48,7 +48,7 @@ func getEpisode(id string) Episode {
 		panic(err)
 	}
 	if episode.Error != nil {
-		print("Error:", *episode.Error)
+		print("Error:", fmt.Sprintf("%v", episode.Error))
 		os.Exit(1)
 	}
 
