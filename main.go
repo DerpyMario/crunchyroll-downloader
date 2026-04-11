@@ -5,24 +5,26 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"regexp"
 	"slices"
 	"strings"
 )
 
 var (
-	token         = ""
-	audioLang     = flag.String("audio-lang", "ja-JP", "Audio language")
-	subtitlesLang = flag.String("subs-lang", "en-US", "Subtitles language")
-	videoQuality  = flag.String("video-quality", "1080p", "Video quality")
-	audioQuality  = flag.String("audio-quality", "192k", "Audio quality")
-	seasonNumber  = flag.Int("season", 0, "Season number. Not used if an episode link is entered")
-	etpRt         = flag.String("etp-rt", "", "The \"etp_rt\" cookie value of your account")
+	token          = ""
+	validContentId = regexp.MustCompile(`^[A-Z0-9]+$`)
+	audioLang      = flag.String("audio-lang", "ja-JP", "Audio language")
+	subtitlesLang  = flag.String("subs-lang", "en-US", "Subtitles language")
+	videoQuality   = flag.String("video-quality", "1080p", "Video quality")
+	audioQuality   = flag.String("audio-quality", "192k", "Audio quality")
+	seasonNumber   = flag.Int("season", 0, "Season number. Not used if an episode link is entered")
+	etpRt          = flag.String("etp-rt", "", "The \"etp_rt\" cookie value of your account")
 )
 
 func processUrl(url string) {
 	contentType := strings.Split(url, "/")[3]
 	contentId := strings.Split(url, "/")[4]
-	if len(contentId) != 9 && len(contentId) != 14 {
+	if !validContentId.MatchString(contentId) {
 		fmt.Printf("Invalid URL format: %s\n", url)
 		return
 	}
