@@ -1,6 +1,9 @@
 .idea
 .DS_Store
 
+# Build artifacts
+crunchyroll-downloader
+
 # Widevine stuff
 *.wvd
 client_id.bin
