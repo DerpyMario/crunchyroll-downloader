@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
+	"time"
 )
 
 type Episode struct {
@@ -26,33 +26,48 @@ type Subtitle struct {
 	URL string `json:"url"`
 }
 
-func getEpisode(id string) Episode {
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://www.crunchyroll.com/playback/v3/%s/web/firefox/play", id), nil)
-	if err != nil {
-		panic(err)
-	}
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0")
-	resp, err := DoRequest(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
+func getEpisode(id string) (Episode, error) {
+	const maxRetries = 5
 
-	var episode Episode
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-	if err = json.Unmarshal(body, &episode); err != nil {
-		panic(err)
-	}
-	if episode.Error != nil {
-		print("Error:", fmt.Sprintf("%v", episode.Error))
-		os.Exit(1)
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		if attempt > 0 {
+			wait := time.Duration(attempt) * 10 * time.Second
+			fmt.Printf("Retrying in %v... (attempt %d/%d)\n", wait, attempt+1, maxRetries)
+			time.Sleep(wait)
+		}
+
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://www.crunchyroll.com/playback/v3/%s/web/firefox/play", id), nil)
+		if err != nil {
+			return Episode{}, err
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0")
+		resp, err := DoRequest(req)
+		if err != nil {
+			return Episode{}, err
+		}
+
+		var episode Episode
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return Episode{}, err
+		}
+		if err = json.Unmarshal(body, &episode); err != nil {
+			return Episode{}, err
+		}
+		if episode.Error != nil {
+			fmt.Printf("API error: %v\n", episode.Error)
+			if attempt < maxRetries-1 {
+				continue
+			}
+			return Episode{}, fmt.Errorf("API error after %d retries: %v", maxRetries, episode.Error)
+		}
+
+		return episode, nil
 	}
 
-	return episode
+	return Episode{}, fmt.Errorf("failed to get episode after %d retries", maxRetries)
 }
 
 type EpisodeMetadataResponse struct {
