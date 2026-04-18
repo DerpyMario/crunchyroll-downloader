@@ -291,7 +291,7 @@ func downloadSeason(videoQuality, audioLocale, audioQuality, subtitlesLang *stri
 			info.EpisodeMetadata.AudioLocale = *audioLocale
 		}
 		if err := downloadEpisode(episode.ID, videoQuality, audioQuality, subtitlesLang, info); err != nil {
-			fmt.Printf("Error downloading episode %v: %s\nSkipping to next episode...\n\n", episode.EpisodeNumber, err)
+			fmt.Printf("Error downloading S%02dE%02d of %s: %s\nSkipping to next episode...\n\n", episode.SeasonNumber, episode.EpisodeNumber, episode.SeriesTitle, err)
 		}
 	}
 }
